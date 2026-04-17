@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'package:serverpod/serverpod.dart';
-import 'apispec_route.dart';
+import 'ui_route/apispec_route.dart';
 import 'ui_route/scalar_ui_route.dart';
 import 'ui_route/swagger_ui_route.dart';
 
@@ -43,8 +43,7 @@ class ApiDocs {
     Map<String, dynamic>? customConfig,
   }) {
     // 1. Ensure mountPath ends with a slash for consistent sub-routing
-    final normalizedMountPath =
-        mountPath.endsWith('/') ? mountPath : '$mountPath/';
+    final normalizedMountPath = mountPath.endsWith('/') ? mountPath : '$mountPath/';
 
     // 2. Register the API Specification Route (required by both UIs)
     final apiSpecRoute = ApiSpecRoute(projectRoot);
@@ -74,9 +73,8 @@ class ApiDocs {
     }
 
     // Register with the /** tail match to handle sub-resources (JS, CSS, etc.)
-    final routeMatch = normalizedMountPath.endsWith('/')
-        ? '${normalizedMountPath}**'
-        : '$normalizedMountPath/**';
+    final routeMatch =
+        normalizedMountPath.endsWith('/') ? '${normalizedMountPath}**' : '$normalizedMountPath/**';
 
     pod.webServer.addRoute(uiRoute, routeMatch);
   }
