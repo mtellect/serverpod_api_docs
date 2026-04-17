@@ -3,8 +3,6 @@ import 'package:serverpod/serverpod.dart';
 
 /// A route that acts as a proxy to handle REST-like paths (e.g., /endpoint/method)
 /// used by Scalar and Swagger UI, translating them into standard Serverpod RPC calls.
-/// 
-/// This route should be registered on the Serverpod API server (port 8080).
 class ApiProxyRoute extends Route {
   /// Creates a new ApiProxyRoute and allows all standard HTTP methods.
   ApiProxyRoute()
@@ -28,17 +26,25 @@ class ApiProxyRoute extends Route {
     if (segments.isNotEmpty && segments.first == 'api-proxy') {
       segments = segments.skip(1).toList();
     }
-    
+
     // We only handle paths like /endpointName/methodName (exactly 2 segments remaining)
     if (segments.length != 2) {
       return Response.notFound();
     }
 
-    final endpointName = segments[0];
-    final methodName = segments[1];
+    return await handleProxyCall(session, request, segments[0], segments[1]);
+  }
 
+  /// The core logic for proxying a REST-style call to a Serverpod endpoint.
+  /// 
+  /// This is static so it can be reused internally by other routes.
+  static Future<Result> handleProxyCall(
+    Session session,
+    Request request,
+    String endpointName,
+    String methodName,
+  ) async {
     // Access the internal router to find the endpoint connector
-    // session.serverpod.endpoints is the EndpointDispatch
     final dynamic dispatch = session.serverpod.endpoints;
     final Map<String, dynamic> connectors = dispatch.connectors;
     final dynamic connector = connectors[endpointName];
@@ -63,7 +69,6 @@ class ApiProxyRoute extends Route {
 
     try {
       // Parse the incoming body as JSON parameters
-      // In Serverpod 3.x, the Request object has readAsString()
       final bodyString = await request.readAsString();
       Map<String, dynamic> params = {};
 

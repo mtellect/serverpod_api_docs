@@ -44,7 +44,8 @@ class ApiDocsUIRoute extends Route {
     String? apiVersion,
     String? apiDescription,
     List<Map<String, String>>? serverUrls,
-  }) : _internalRoute = type == ApiDocsType.scalar
+  })  : assert(mountPath.endsWith('/'), 'mountPath must end with a trailing slash.'),
+        _internalRoute = type == ApiDocsType.scalar
             ? ScalarUIRoute(
                 projectRoot,
                 mountPath: mountPath,
@@ -69,7 +70,18 @@ class ApiDocsUIRoute extends Route {
                 apiVersion: apiVersion,
                 apiDescription: apiDescription,
                 serverUrls: serverUrls,
-              );
+              ),
+        super(methods: {
+          Method.get,
+          Method.post,
+          Method.put,
+          Method.patch,
+          Method.delete,
+          Method.options,
+          Method.head,
+          Method.trace,
+          Method.connect,
+        });
 
   @override
   Future<Result> handleCall(Session session, Request request) async {

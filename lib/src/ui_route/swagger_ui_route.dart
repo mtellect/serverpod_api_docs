@@ -2,70 +2,38 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:serverpod/serverpod.dart';
 import 'package:path/path.dart' as p;
+import 'api_proxy_route.dart';
 import 'swagger_assets.dart';
 
 /// A development-friendly route that serves a standard distribution Swagger UI.
-///
-/// This version supports custom branding and navigation links to maintain
-/// consistency with the Scalar UI.
+/// 
+/// This route handles serving the Swagger HTML, its assets via CDN redirection,
+/// and provides an internal REST-to-RPC proxy for testing endpoints.
 class SwaggerUIRoute extends Route {
-  /// The root directory of the project where apispec.json is located.
   final Directory _projectRoot;
-
-  /// The base path where the Swagger UI will be mounted (e.g., '/swagger/').
   final String _mountPath;
-
-  /// The full path to the API specification JSON file.
   final String _specPath;
-
-  /// Custom CSS for the index.css file.
-  final String _indexCss;
-
-  /// Custom JS for the swagger-initializer.js file.
-  final String _initializerJs;
-
-  /// The title of the page.
   final String _title;
-
-  /// Branding name for the header.
   final String _brandingName;
-
-  /// Navigation links for the header.
   final List<Map<String, String>> _navLinks;
-
-  /// Optional override for the API title.
   final String? _apiTitle;
-
-  /// Optional override for the API version.
   final String? _apiVersion;
-
-  /// Optional override for the API description.
   final String? _apiDescription;
-
-  /// Optional override for the servers list.
   final List<Map<String, String>>? _serverUrls;
+  final String _customCss;
 
-  /// Creates a new SwaggerUIRoute instance with support for standard customization and branding.
-  ///
+  /// Creates a new Swagger UI route.
+  /// 
   /// [projectRoot] is the directory where the apispec.json file is located.
   /// [mountPath] is the URL path where the Swagger UI will be served, must end with a slash.
-  /// [customSpecPath] allows overriding the URL from which the Swagger UI loads the API specification.
-  /// [title] sets the browser tab title.
-  /// [brandingName] sets the name displayed in the top-left of the custom header.
-  /// [navLinks] provides a list of maps (label/url) to display in the header navigation.
-  /// [customCss] allows providing additional CSS styles.
-  /// [customIndexCss] allows providing the entire index.css content (overrides branding/customCss defaults).
-  /// [customInitializerJs] allows overriding the Swagger UI initialization logic.
   SwaggerUIRoute(
     Directory projectRoot, {
     String mountPath = '/swagger/',
     String? customSpecPath,
-    String title = 'Serverpod API - Swagger UI',
+    String title = 'Serverpod API Reference',
     String brandingName = 'Swagger',
     List<Map<String, String>> navLinks = const [],
     String customCss = '',
-    String? customIndexCss,
-    String? customInitializerJs,
     String? apiTitle,
     String? apiVersion,
     String? apiDescription,
@@ -74,33 +42,57 @@ class SwaggerUIRoute extends Route {
         _projectRoot = projectRoot,
         _mountPath = mountPath,
         _specPath = customSpecPath ?? p.join(mountPath, 'apispec.json'),
+        _title = title,
         _brandingName = brandingName,
         _navLinks = navLinks,
         _apiTitle = apiTitle,
         _apiVersion = apiVersion,
         _apiDescription = apiDescription,
         _serverUrls = serverUrls,
-        _indexCss = (customIndexCss ?? SwaggerAssets.defaultIndexCss)
-            .replaceAll('{{CUSTOM_CSS}}', customCss),
-        _initializerJs = (customInitializerJs ?? SwaggerAssets.defaultInitializerJs)
-            .replaceAll('{{SPEC_URL}}', customSpecPath ?? 'apispec.json'),
-        _title = title;
-
-  bool _isPathUnderMount(String path, String subPath) {
-    return path == p.join(_mountPath, subPath);
-  }
+        _customCss = customCss,
+        super(methods: {
+          Method.get,
+          Method.post,
+          Method.put,
+          Method.patch,
+          Method.delete,
+          Method.options,
+          Method.head,
+          Method.trace,
+          Method.connect,
+        });
 
   bool _isMainPage(String path) {
     return path == _mountPath || path == p.join(_mountPath, 'index.html');
   }
 
+  bool _isPathUnderMount(String path, String subPath) {
+    return path == p.join(_mountPath, subPath);
+  }
+
   @override
   Future<Result> handleCall(Session session, Request request) async {
     final path = request.url.path;
+    final pathSegments = request.url.pathSegments;
+
+    // Handle Internal API Proxy (_api/endpoint/method or api-proxy/endpoint/method)
+    if (pathSegments.contains('_api') || pathSegments.contains('api-proxy')) {
+      final apiIndex = pathSegments.indexOf('_api') != -1 
+          ? pathSegments.indexOf('_api') 
+          : pathSegments.indexOf('api-proxy');
+      final remainingSegments = pathSegments.skip(apiIndex + 1).toList();
+      if (remainingSegments.length == 2) {
+        return await ApiProxyRoute.handleProxyCall(
+          session,
+          request,
+          remainingSegments[0],
+          remainingSegments[1],
+        );
+      }
+    }
 
     // 0. Handle Redirect for missing trailing slash
     // Ensuring we are at the canonical mount point with a trailing slash
-    // is critical so that relative asset links in the HTML work correctly.
     if (path == _mountPath.substring(0, _mountPath.length - 1)) {
       return Response.movedPermanently(Uri.parse(_mountPath));
     }
@@ -127,8 +119,18 @@ class SwaggerUIRoute extends Route {
             spec['info'] = info;
 
             // Update Servers section
+            // If no serverUrls are provided, automatically point to the internal proxy
             if (_serverUrls != null) {
               spec['servers'] = _serverUrls;
+            } else {
+              // Ensure we have a valid base URL for the proxy
+              final String baseUrl = request.url.origin;
+              spec['servers'] = [
+                {
+                  'url': '$baseUrl${_mountPath}_api',
+                  'description': 'Internal API Proxy',
+                }
+              ];
             }
 
             content = jsonEncode(spec);
@@ -158,36 +160,15 @@ class SwaggerUIRoute extends Route {
     if (_isPathUnderMount(path, 'swagger-ui-standalone-preset.js')) {
       return Response.found(Uri.parse('${SwaggerAssets.cdnBase}/swagger-ui-standalone-preset.js'));
     }
-    if (_isPathUnderMount(path, 'favicon-32x32.png')) {
-      return Response.found(Uri.parse('${SwaggerAssets.cdnBase}/favicon-32x32.png'));
-    }
-    if (_isPathUnderMount(path, 'favicon-16x16.png')) {
-      return Response.found(Uri.parse('${SwaggerAssets.cdnBase}/favicon-16x16.png'));
-    }
 
-    // 3. Handle Local Assets (Customizable)
-    if (_isPathUnderMount(path, 'index.css')) {
-      return Response.ok(
-        body: Body.fromString(_indexCss, mimeType: MimeType('text', 'css')),
-      );
-    }
-    if (_isPathUnderMount(path, 'swagger-initializer.js')) {
-      return Response.ok(
-        body: Body.fromString(_initializerJs, mimeType: MimeType('application', 'javascript')),
-      );
-    }
-
-    // 4. Handle Main HTML Page
+    // 3. Handle Main HTML Page
     if (_isMainPage(path)) {
-      // Build nav links HTML
-      final navLinksHtml = _navLinks
-          .map((link) => '<a href="${link['url']}">${link['label']}</a>')
-          .join('\n        ');
-
       final html = SwaggerAssets.indexHtmlTemplate
-          .replaceAll('{{TITLE}}', _title)
-          .replaceAll('{{BRANDING_NAME}}', _brandingName)
-          .replaceAll('{{NAV_LINKS}}', navLinksHtml);
+          .replaceFirst('{{SPEC_URL}}', _specPath)
+          .replaceFirst('{{TITLE}}', _title)
+          .replaceFirst('{{BRANDING_NAME}}', _brandingName)
+          .replaceFirst('{{NAV_LINKS}}', _generateNavLinks())
+          .replaceFirst('{{CUSTOM_CSS}}', _customCss);
 
       return Response.ok(
         body: Body.fromString(html, mimeType: MimeType.html),
@@ -195,5 +176,13 @@ class SwaggerUIRoute extends Route {
     }
 
     return Response.notFound();
+  }
+
+  String _generateNavLinks() {
+    if (_navLinks.isEmpty) return '';
+    return _navLinks
+        .map((link) =>
+            '<a href="${link['url']}" target="_blank" class="nav-link">${link['label']}</a>')
+        .join('\n');
   }
 }

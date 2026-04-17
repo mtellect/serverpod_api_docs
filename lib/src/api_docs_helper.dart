@@ -81,9 +81,10 @@ class ApiDocs {
 
     pod.webServer.addRoute(uiRoute, routeMatch);
 
-    // 4. Register the API Proxy Route on the Web Server (shared port or 8082)
-    // This allows the documentation to call endpoints using REST-like paths /endpoint/method
-    final apiProxyRoute = ApiProxyRoute();
-    pod.webServer.addRoute(apiProxyRoute, '/**');
+    // Register global proxy endpoints on the web server (port 8082)
+    // This provides a "bridge" at both /api-proxy and /_api for all documentation types.
+    final proxy = ApiProxyRoute();
+    pod.webServer.addRoute(proxy, '/api-proxy/**');
+    pod.webServer.addRoute(proxy, '/_api/**');
   }
 }

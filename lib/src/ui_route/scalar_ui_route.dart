@@ -2,62 +2,31 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:serverpod/serverpod.dart';
 import 'package:path/path.dart' as p;
+import 'api_proxy_route.dart';
 import 'scalar_assets.dart';
 
-/// A development-friendly route that serves an enhanced Scalar API reference with a custom header.
-///
-/// Scalar is a modern alternative to Swagger UI that provides a more aesthetic
-/// and interactive API documentation interface.
+/// A development-friendly route that serves a custom-branded Scalar API Reference.
+/// 
+/// This route handles serving the Scalar HTML, its assets via CDN redirection,
+/// and provides an internal REST-to-RPC proxy for testing endpoints.
 class ScalarUIRoute extends Route {
-  /// The root directory of the project where apispec.json is located.
   final Directory _projectRoot;
-
-  /// The base path where the Scalar UI will be mounted (e.g., '/scalar/').
   final String _mountPath;
-
-  /// The full path to the API specification JSON file.
   final String _specPath;
-
-  /// The title of the page.
   final String _title;
-
-  /// Custom Scalar configuration.
+  final String _brandingName;
+  final List<Map<String, String>> _navLinks;
+  final String? _apiTitle;
+  final String? _apiVersion;
+  final String? _apiDescription;
+  final List<Map<String, String>>? _serverUrls;
+  final String _customCss;
   final Map<String, dynamic> _config;
 
-  /// Branding name for the header.
-  final String _brandingName;
-
-  /// Navigation links for the header.
-  final List<Map<String, String>> _navLinks;
-
-  /// Optional override for the API title.
-  final String? _apiTitle;
-
-  /// Optional override for the API version.
-  final String? _apiVersion;
-
-  /// Optional override for the API description.
-  final String? _apiDescription;
-
-  /// Optional override for the servers list.
-  final List<Map<String, String>>? _serverUrls;
-
-  /// Custom CSS for the page.
-  final String _customCss;
-
-  /// Creates a new ScalarUIRoute instance with an enhanced header and initialization options.
-  ///
+  /// Creates a new Scalar UI route.
+  /// 
   /// [projectRoot] is the directory where the apispec.json file is located.
   /// [mountPath] is the URL path where the Scalar UI will be served, must end with a slash.
-  /// [customSpecPath] allows overriding the URL from which Scalar loads the API specification.
-  /// [title] sets the browser tab title.
-  /// [brandingName] sets the name displayed in the top-left of the custom header.
-  /// [navLinks] provides a list of maps (label/url) to display in the header navigation.
-  /// [customCss] allows providing additional CSS styles.
-  /// [theme] selects the Scalar theme (use constants from [ScalarAssets]).
-  /// [proxyUrl] sets a proxy URL for avoiding CORS issues if the spec is on another domain.
-  /// [showSidebar] toggles the sidebar visibility.
-  /// [customConfig] allows providing additional Scalar-specific configuration.
   ScalarUIRoute(
     Directory projectRoot, {
     String mountPath = '/scalar/',
@@ -94,7 +63,18 @@ class ScalarUIRoute extends Route {
           if (proxyUrl != null) 'proxyUrl': proxyUrl,
           'showSidebar': showSidebar,
           ...?customConfig,
-        };
+        },
+        super(methods: {
+          Method.get,
+          Method.post,
+          Method.put,
+          Method.patch,
+          Method.delete,
+          Method.options,
+          Method.head,
+          Method.trace,
+          Method.connect,
+        });
 
   bool _isMainPage(String path) {
     return path == _mountPath || path == p.join(_mountPath, 'index.html');
@@ -103,6 +83,23 @@ class ScalarUIRoute extends Route {
   @override
   Future<Result> handleCall(Session session, Request request) async {
     final path = request.url.path;
+    final pathSegments = request.url.pathSegments;
+
+    // Handle Internal API Proxy (_api/endpoint/method or api-proxy/endpoint/method)
+    if (pathSegments.contains('_api') || pathSegments.contains('api-proxy')) {
+      final apiIndex = pathSegments.indexOf('_api') != -1 
+          ? pathSegments.indexOf('_api') 
+          : pathSegments.indexOf('api-proxy');
+      final remainingSegments = pathSegments.skip(apiIndex + 1).toList();
+      if (remainingSegments.length == 2) {
+        return await ApiProxyRoute.handleProxyCall(
+          session,
+          request,
+          remainingSegments[0],
+          remainingSegments[1],
+        );
+      }
+    }
 
     // 0. Handle Redirect for missing trailing slash
     if (path == _mountPath.substring(0, _mountPath.length - 1)) {
@@ -131,8 +128,18 @@ class ScalarUIRoute extends Route {
             spec['info'] = info;
 
             // Update Servers section
+            // If no serverUrls are provided, automatically point to the internal proxy
             if (_serverUrls != null) {
               spec['servers'] = _serverUrls;
+            } else {
+              // Ensure we have a valid base URL for the proxy
+              final String baseUrl = request.url.origin;
+              spec['servers'] = [
+                {
+                  'url': '$baseUrl${_mountPath}_api',
+                  'description': 'Internal API Proxy',
+                }
+              ];
             }
 
             content = jsonEncode(spec);
@@ -154,20 +161,14 @@ class ScalarUIRoute extends Route {
 
     // 2. Handle Main HTML Page
     if (_isMainPage(path)) {
-      final specUrl = _specPath;
-
-      // Build nav links HTML
-      final navLinksHtml = _navLinks
-          .map((link) => '<a href="${link['url']}">${link['label']}</a>')
-          .join('\n        ');
-
+      final configJson = jsonEncode(_config);
       final html = ScalarAssets.indexHtmlTemplate
-          .replaceAll('{{TITLE}}', _title)
-          .replaceAll('{{SPEC_URL}}', specUrl)
-          .replaceAll('{{BRANDING_NAME}}', _brandingName)
-          .replaceAll('{{NAV_LINKS}}', navLinksHtml)
-          .replaceAll('{{CUSTOM_CSS}}', _customCss)
-          .replaceAll('{{CONFIG}}', jsonEncode(_config));
+          .replaceFirst('{{SPEC_URL}}', _specPath)
+          .replaceFirst('{{TITLE}}', _title)
+          .replaceFirst('{{BRANDING_NAME}}', _brandingName)
+          .replaceFirst('{{NAV_LINKS}}', _generateNavLinks())
+          .replaceFirst('{{CUSTOM_CSS}}', _customCss)
+          .replaceFirst('{{CONFIG}}', configJson);
 
       return Response.ok(
         body: Body.fromString(html, mimeType: MimeType.html),
@@ -175,5 +176,13 @@ class ScalarUIRoute extends Route {
     }
 
     return Response.notFound();
+  }
+
+  String _generateNavLinks() {
+    if (_navLinks.isEmpty) return '';
+    return _navLinks
+        .map((link) =>
+            '<a href="${link['url']}" target="_blank" class="nav-link">${link['label']}</a>')
+        .join('\n');
   }
 }

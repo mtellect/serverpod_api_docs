@@ -61,6 +61,15 @@ class ApiSpecRoute extends Route {
           // Update Servers section
           if (serverUrls != null) {
             spec['servers'] = serverUrls;
+          } else {
+            // Default to the internal proxy if no servers are provided
+            final String baseUrl = request.url.origin;
+            spec['servers'] = [
+              {
+                'url': '$baseUrl/_api', // Fallback for root spec
+                'description': 'Internal API Proxy',
+              }
+            ];
           }
 
           content = jsonEncode(spec);
