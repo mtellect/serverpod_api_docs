@@ -112,9 +112,9 @@ If you want to contribute to the package or use a non-published version, you can
 
 ### Global Activation
 
-To activate locally for development:
+To activate locally for development (from the package root):
 ```bash
-dart pub global activate -s path /Users/mapps/PlayGround/serverpod_swagger
+dart pub global activate -s path .
 ```
 
 To activate via Git:
@@ -128,7 +128,7 @@ To use a local version in your `pubspec.yaml`:
 ```yaml
 dependencies:
   serverpod_api_docs:
-    path: /Users/mapps/PlayGround/serverpod_swagger
+    path: ../path/to/serverpod_api_docs
 ```
 
 To use the Git version:
