@@ -106,7 +106,7 @@ class ScalarUIRoute extends Route {
 
     // 2. Handle Main HTML Page
     if (_isMainPage(path)) {
-      final specUrl = _specPath.startsWith('/') ? _specPath.substring(1) : _specPath;
+      final specUrl = _specPath;
 
       // Build nav links HTML
       final navLinksHtml = _navLinks
