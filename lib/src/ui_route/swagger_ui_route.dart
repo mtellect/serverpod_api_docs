@@ -70,17 +70,19 @@ class SwaggerUIRoute extends Route {
   }
 
   bool _isMainPage(String path) {
-    String normalizedMount = _mountPath.endsWith('/') && _mountPath.length > 1
-        ? _mountPath.substring(0, _mountPath.length - 1)
-        : _mountPath;
-    String normalizedPath =
-        path.endsWith('/') && path.length > 1 ? path.substring(0, path.length - 1) : path;
-    return normalizedPath == normalizedMount;
+    return path == _mountPath || path == p.join(_mountPath, 'index.html');
   }
 
   @override
   Future<Response> handleCall(Session session, Request request) async {
     final path = request.url.path;
+
+    // 0. Handle Redirect for missing trailing slash
+    // Ensuring we are at the canonical mount point with a trailing slash
+    // is critical so that relative asset links in the HTML work correctly.
+    if (path == _mountPath.substring(0, _mountPath.length - 1)) {
+      return Response.movedPermanently(Uri.parse(_mountPath));
+    }
 
     // 1. Handle API Spec JSON
     if (path == _specPath) {
@@ -141,11 +143,6 @@ class SwaggerUIRoute extends Route {
       return Response.ok(
         body: Body.fromString(html, mimeType: MimeType.html),
       );
-    }
-
-    // 5. Handle Redirect for missing trailing slash
-    if (path == _mountPath.substring(0, _mountPath.length - 1)) {
-      return Response.movedPermanently(Uri.parse(_mountPath));
     }
 
     return Response.notFound();
