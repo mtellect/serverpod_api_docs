@@ -1,8 +1,7 @@
 import 'dart:io';
 import 'package:serverpod/serverpod.dart';
 import 'ui_route/apispec_route.dart';
-import 'ui_route/scalar_ui_route.dart';
-import 'ui_route/swagger_ui_route.dart';
+import 'ui_route/api_docs_ui_route.dart';
 
 /// Defines the available documentation UI styles.
 enum ApiDocsType {
@@ -50,27 +49,16 @@ class ApiDocs {
     pod.webServer.addRoute(apiSpecRoute, '/apispec.json');
 
     // 3. Register the UI Route
-    Route uiRoute;
-    if (type == ApiDocsType.scalar) {
-      uiRoute = ScalarUIRoute(
-        projectRoot,
-        mountPath: normalizedMountPath,
-        title: title,
-        brandingName: brandingName,
-        navLinks: navLinks,
-        customCss: customCss,
-        customConfig: customConfig,
-      );
-    } else {
-      uiRoute = SwaggerUIRoute(
-        projectRoot,
-        mountPath: normalizedMountPath,
-        title: title,
-        brandingName: brandingName,
-        navLinks: navLinks,
-        customCss: customCss,
-      );
-    }
+    final uiRoute = ApiDocsUIRoute(
+      projectRoot,
+      type: type,
+      mountPath: normalizedMountPath,
+      title: title,
+      brandingName: brandingName,
+      navLinks: navLinks,
+      customCss: customCss,
+      customConfig: customConfig,
+    );
 
     // Register with the /** tail match to handle sub-resources (JS, CSS, etc.)
     final routeMatch =

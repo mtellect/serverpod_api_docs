@@ -81,7 +81,7 @@ class ScalarUIRoute extends Route {
   }
 
   @override
-  Future<Response> handleCall(Session session, Request request) async {
+  Future<Result> handleCall(Session session, Request request) async {
     final path = request.url.path;
 
     // 0. Handle Redirect for missing trailing slash
