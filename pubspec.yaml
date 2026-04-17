@@ -1,8 +1,7 @@
 name: serverpod_api_docs
 description: An automated OpenAPI documentation suite for Serverpod, supporting Scalar and Swagger UI.
-version: 0.5.0 # Rebranded to serverpod_api_docs
-homepage: https://serverpodswagger.vercel.app/
-repository: https://github.com/arsheriff2k3/serverpod_swagger
+version: 0.0.1 # Initial release of the rebranded package
+repository: https://github.com/mtellect/serverpod_api_docs
 
 executables:
   generate: serverpod_api_docs_generate
