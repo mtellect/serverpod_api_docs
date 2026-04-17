@@ -40,6 +40,10 @@ class ApiDocsUIRoute extends Route {
     List<Map<String, String>> navLinks = const [],
     String customCss = '',
     Map<String, dynamic>? customConfig,
+    String? apiTitle,
+    String? apiVersion,
+    String? apiDescription,
+    List<Map<String, String>>? serverUrls,
   }) : _internalRoute = type == ApiDocsType.scalar
             ? ScalarUIRoute(
                 projectRoot,
@@ -49,6 +53,10 @@ class ApiDocsUIRoute extends Route {
                 navLinks: navLinks,
                 customCss: customCss,
                 customConfig: customConfig,
+                apiTitle: apiTitle,
+                apiVersion: apiVersion,
+                apiDescription: apiDescription,
+                serverUrls: serverUrls,
               )
             : SwaggerUIRoute(
                 projectRoot,
@@ -57,6 +65,10 @@ class ApiDocsUIRoute extends Route {
                 brandingName: brandingName,
                 navLinks: navLinks,
                 customCss: customCss,
+                apiTitle: apiTitle,
+                apiVersion: apiVersion,
+                apiDescription: apiDescription,
+                serverUrls: serverUrls,
               );
 
   @override

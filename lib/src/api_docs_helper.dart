@@ -40,12 +40,22 @@ class ApiDocs {
     List<Map<String, String>> navLinks = const [],
     String customCss = '',
     Map<String, dynamic>? customConfig,
+    String? apiTitle,
+    String? apiVersion,
+    String? apiDescription,
+    List<Map<String, String>>? serverUrls,
   }) {
     // 1. Ensure mountPath ends with a slash for consistent sub-routing
     final normalizedMountPath = mountPath.endsWith('/') ? mountPath : '$mountPath/';
 
     // 2. Register the API Specification Route (required by both UIs)
-    final apiSpecRoute = ApiSpecRoute(projectRoot);
+    final apiSpecRoute = ApiSpecRoute(
+      projectRoot,
+      apiTitle: apiTitle,
+      apiVersion: apiVersion,
+      apiDescription: apiDescription,
+      serverUrls: serverUrls,
+    );
     pod.webServer.addRoute(apiSpecRoute, '/apispec.json');
 
     // 3. Register the UI Route
@@ -58,6 +68,10 @@ class ApiDocs {
       navLinks: navLinks,
       customCss: customCss,
       customConfig: customConfig,
+      apiTitle: apiTitle,
+      apiVersion: apiVersion,
+      apiDescription: apiDescription,
+      serverUrls: serverUrls,
     );
 
     // Register with the /** tail match to handle sub-resources (JS, CSS, etc.)

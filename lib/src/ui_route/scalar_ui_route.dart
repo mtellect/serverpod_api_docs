@@ -30,6 +30,18 @@ class ScalarUIRoute extends Route {
   /// Navigation links for the header.
   final List<Map<String, String>> _navLinks;
 
+  /// Optional override for the API title.
+  final String? _apiTitle;
+
+  /// Optional override for the API version.
+  final String? _apiVersion;
+
+  /// Optional override for the API description.
+  final String? _apiDescription;
+
+  /// Optional override for the servers list.
+  final List<Map<String, String>>? _serverUrls;
+
   /// Custom CSS for the page.
   final String _customCss;
 
@@ -58,6 +70,10 @@ class ScalarUIRoute extends Route {
     String? proxyUrl,
     bool showSidebar = true,
     Map<String, dynamic>? customConfig,
+    String? apiTitle,
+    String? apiVersion,
+    String? apiDescription,
+    List<Map<String, String>>? serverUrls,
   })  : assert(mountPath.endsWith('/'), 'mountPath must end with a trailing slash.'),
         _projectRoot = projectRoot,
         _mountPath = mountPath,
@@ -65,6 +81,10 @@ class ScalarUIRoute extends Route {
         _title = title,
         _brandingName = brandingName,
         _navLinks = navLinks,
+        _apiTitle = apiTitle,
+        _apiVersion = apiVersion,
+        _apiDescription = apiDescription,
+        _serverUrls = serverUrls,
         _customCss = customCss,
         _config = {
           'showDeveloperTools': 'never',
@@ -93,7 +113,35 @@ class ScalarUIRoute extends Route {
     if (path == _specPath) {
       final specFile = File(p.join(_projectRoot.path, 'apispec.json'));
       if (await specFile.exists()) {
-        final content = await specFile.readAsString();
+        var content = await specFile.readAsString();
+
+        // Apply overrides if any are provided
+        if (_apiTitle != null ||
+            _apiVersion != null ||
+            _apiDescription != null ||
+            _serverUrls != null) {
+          try {
+            final Map<String, dynamic> spec = jsonDecode(content);
+
+            // Update Info section
+            final info = (spec['info'] as Map<String, dynamic>?) ?? {};
+            if (_apiTitle != null) info['title'] = _apiTitle;
+            if (_apiVersion != null) info['version'] = _apiVersion;
+            if (_apiDescription != null) info['description'] = _apiDescription;
+            spec['info'] = info;
+
+            // Update Servers section
+            if (_serverUrls != null) {
+              spec['servers'] = _serverUrls;
+            }
+
+            content = jsonEncode(spec);
+          } catch (e) {
+            session.log('Error patching apispec.json in ScalarUIRoute: $e',
+                level: LogLevel.error);
+          }
+        }
+
         return Response.ok(
           body: Body.fromString(content, mimeType: MimeType.json),
           headers: Headers.build((mh) {
