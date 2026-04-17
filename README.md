@@ -15,8 +15,11 @@ A comprehensive documentation suite to automatically generate and serve **Scalar
 - Serverpod 3.4.2 or higher
 - Dart 3.0.0 or higher
 
+---
+
 ## Installation
 
+### 1. Add as a dependency
 Add the package to your `pubspec.yaml` file:
 
 ```yaml
@@ -24,31 +27,59 @@ dependencies:
   serverpod_api_docs: ^0.0.1
 ```
 
-Then run:
+### 2. Global Activation (for the CLI)
+To use the generator command globally from any directory:
 
 ```bash
-dart pub get
+dart pub global activate serverpod_api_docs
+```
+
+### 3. Development & Git Installation
+If you want to use a non-published version or contribute to the package:
+
+**Local Development (from the package root):**
+```bash
+dart pub global activate -s path .
+```
+
+**Via Git:**
+```bash
+dart pub global activate -s git https://github.com/mtellect/serverpod_api_docs.git
+```
+
+**Local/Git Dependency:**
+```yaml
+# In your pubspec.yaml
+dependencies:
+  serverpod_api_docs:
+    path: ../path/to/serverpod_api_docs # For local
+    # OR
+    git:
+      url: https://github.com/mtellect/serverpod_api_docs.git
+      ref: main
 ```
 
 ---
 
-## Step 1: Generate your Specification
+## Usage: Step 1 - Generate your Specification
 
 The foundation of both UIs is the `apispec.json` file. Run this command in your server project root:
 
 ```bash
+# If activated globally
+serverpod_api_docs_generate --base-url=http://localhost:8082
+
+# OR via dart run
 dart run serverpod_api_docs:generate --base-url=http://localhost:8082
 ```
 
 ---
 
-## Step 2: Choose Your Style
+## Usage: Step 2 - Choose Your Style
 
-Use the `ApiDocs.addRoute` helper to instantly register your documentation. You can choose your preferred UI style with a simple enum.
+Use the `ApiDocs.addRoute` helper to instantly register your documentation.
 
 ### Option A: Scalar UI (Modern & Sleek)
-Recommended for high-end projects. Features **glassmorphism**, a cleaner sidebar, and faster navigation.
-
 ```dart
 // bin/server.dart
 import 'package:serverpod_api_docs/serverpod_api_docs.dart';
@@ -56,7 +87,7 @@ import 'package:serverpod_api_docs/serverpod_api_docs.dart';
 ApiDocs.addRoute(
   pod,
   projectRoot,
-  type: ApiDocsType.scalar, // Modern look
+  type: ApiDocsType.scalar,
   brandingName: 'Dey Chop', 
   navLinks: [
     {'label': 'Twitter', 'url': 'https://twitter.com/wiremoney'},
@@ -65,8 +96,6 @@ ApiDocs.addRoute(
 ```
 
 ### Option B: Swagger UI (Classic & Professional)
-The industry standard. Solid, familiar, and now supports the same branding as Scalar.
-
 ```dart
 // bin/server.dart
 import 'package:serverpod_api_docs/serverpod_api_docs.dart';
@@ -74,7 +103,7 @@ import 'package:serverpod_api_docs/serverpod_api_docs.dart';
 ApiDocs.addRoute(
   pod,
   projectRoot,
-  type: ApiDocsType.swagger, // Classic look
+  type: ApiDocsType.swagger,
   brandingName: 'API Reference',
 );
 ```
@@ -84,18 +113,12 @@ ApiDocs.addRoute(
 ## Advanced Configuration
 
 ### Manual Route Registration
-If you need custom routing logic, you can still instantiate the routes manually:
+If you need custom routing logic:
 
 ```dart
-// For Scalar
 final scalarRoute = ScalarUIRoute(projectRoot, brandingName: 'My Brand');
 pod.webServer.addRoute(scalarRoute, '/custom_docs/**');
 
-// For Swagger
-final swaggerRoute = SwaggerUIRoute(projectRoot, title: 'My Swagger');
-pod.webServer.addRoute(swaggerRoute, '/custom_swagger/**');
-
-// Don't forget the spec route if using custom paths
 final apiSpecRoute = ApiSpecRoute(projectRoot);
 pod.webServer.addRoute(apiSpecRoute, '/apispec.json');
 ```
@@ -103,42 +126,8 @@ pod.webServer.addRoute(apiSpecRoute, '/apispec.json');
 ## Troubleshooting
 
 - **Mount Path**: The `ApiDocs.addRoute` method defaults to `/docs/`. You can change this via the `mountPath` parameter.
-- **Trailing Slash**: The package automatically handles redirects, but explicit trailing slashes in your browser (e.g., `localhost:8082/docs/`) are recommended.
+- **Trailing Slash**: Trailing slashes in your browser (e.g., `localhost:8082/docs/`) are recommended.
 - **Port 8082**: Ensure your generated `apispec.json` has a `--base-url` that matches your active server port.
-
-## Development & Git Installation
-
-If you want to contribute to the package or use a non-published version, you can activate it locally or via Git.
-
-### Global Activation
-
-To activate locally for development (from the package root):
-```bash
-dart pub global activate -s path .
-```
-
-To activate via Git:
-```bash
-dart pub global activate -s git https://github.com/mtellect/serverpod_api_docs.git
-```
-
-### Adding as a Dependency
-
-To use a local version in your `pubspec.yaml`:
-```yaml
-dependencies:
-  serverpod_api_docs:
-    path: ../path/to/serverpod_api_docs
-```
-
-To use the Git version:
-```yaml
-dependencies:
-  serverpod_api_docs:
-    git:
-      url: https://github.com/mtellect/serverpod_api_docs.git
-      ref: main
-```
 
 ## Credits
 
