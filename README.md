@@ -88,9 +88,9 @@ ApiDocs.addRoute(
   pod,
   projectRoot,
   type: ApiDocsType.scalar,
-  brandingName: 'Dey Chop', 
+  brandingName: 'My Brand', 
   navLinks: [
-    {'label': 'Twitter', 'url': 'https://twitter.com/wiremoney'},
+    {'label': 'Twitter', 'url': 'https://twitter.com/MyBrand'},
   ],
 );
 ```
