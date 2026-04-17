@@ -6,7 +6,7 @@ import 'api_proxy_route.dart';
 import 'swagger_assets.dart';
 
 /// A development-friendly route that serves a standard distribution Swagger UI.
-/// 
+///
 /// This route handles serving the Swagger HTML, its assets via CDN redirection,
 /// and provides an internal REST-to-RPC proxy for testing endpoints.
 class SwaggerUIRoute extends Route {
@@ -23,7 +23,7 @@ class SwaggerUIRoute extends Route {
   final String _customCss;
 
   /// Creates a new Swagger UI route.
-  /// 
+  ///
   /// [projectRoot] is the directory where the apispec.json file is located.
   /// [mountPath] is the URL path where the Swagger UI will be served, must end with a slash.
   SwaggerUIRoute(
@@ -77,8 +77,8 @@ class SwaggerUIRoute extends Route {
 
     // Handle Internal API Proxy (_api/endpoint/method or api-proxy/endpoint/method)
     if (pathSegments.contains('_api') || pathSegments.contains('api-proxy')) {
-      final apiIndex = pathSegments.indexOf('_api') != -1 
-          ? pathSegments.indexOf('_api') 
+      final apiIndex = pathSegments.indexOf('_api') != -1
+          ? pathSegments.indexOf('_api')
           : pathSegments.indexOf('api-proxy');
       final remainingSegments = pathSegments.skip(apiIndex + 1).toList();
       if (remainingSegments.length == 2) {
@@ -135,8 +135,7 @@ class SwaggerUIRoute extends Route {
 
             content = jsonEncode(spec);
           } catch (e) {
-            session.log('Error patching apispec.json in SwaggerUIRoute: $e',
-                level: LogLevel.error);
+            session.log('Error patching apispec.json in SwaggerUIRoute: $e', level: LogLevel.error);
           }
         }
 
@@ -159,6 +158,20 @@ class SwaggerUIRoute extends Route {
     }
     if (_isPathUnderMount(path, 'swagger-ui-standalone-preset.js')) {
       return Response.found(Uri.parse('${SwaggerAssets.cdnBase}/swagger-ui-standalone-preset.js'));
+    }
+
+    // 3. Handle local assets
+    if (_isPathUnderMount(path, 'index.css')) {
+      final css = SwaggerAssets.defaultIndexCss.replaceFirst('{{CUSTOM_CSS}}', _customCss);
+      return Response.ok(
+        body: Body.fromString(css, mimeType: MimeType.css),
+      );
+    }
+    if (_isPathUnderMount(path, 'swagger-initializer.js')) {
+      final js = SwaggerAssets.defaultInitializerJs.replaceFirst('{{SPEC_URL}}', _specPath);
+      return Response.ok(
+        body: Body.fromString(js, mimeType: MimeType.javascript),
+      );
     }
 
     // 3. Handle Main HTML Page
