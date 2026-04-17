@@ -11,7 +11,7 @@ class ServerpodApiDocsVersion {
   /// This constructor is not typically used as the class provides static constants.
 
   /// The current version of the package.
-  static const String version = '0.5.0';
+  static const String version = '0.0.1';
 
   /// The minimum supported Serverpod version.
   static const String minServerpodVersion = '3.4.0';
