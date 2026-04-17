@@ -106,6 +106,40 @@ pod.webServer.addRoute(apiSpecRoute, '/apispec.json');
 - **Trailing Slash**: The package automatically handles redirects, but explicit trailing slashes in your browser (e.g., `localhost:8082/docs/`) are recommended.
 - **Port 8082**: Ensure your generated `apispec.json` has a `--base-url` that matches your active server port.
 
+## Development & Git Installation
+
+If you want to contribute to the package or use a non-published version, you can activate it locally or via Git.
+
+### Global Activation
+
+To activate locally for development:
+```bash
+dart pub global activate -s path /Users/mapps/PlayGround/serverpod_swagger
+```
+
+To activate via Git:
+```bash
+dart pub global activate -s git https://github.com/mtellect/serverpod_api_docs.git
+```
+
+### Adding as a Dependency
+
+To use a local version in your `pubspec.yaml`:
+```yaml
+dependencies:
+  serverpod_api_docs:
+    path: /Users/mapps/PlayGround/serverpod_swagger
+```
+
+To use the Git version:
+```yaml
+dependencies:
+  serverpod_api_docs:
+    git:
+      url: https://github.com/mtellect/serverpod_api_docs.git
+      ref: main
+```
+
 ## Credits
 
 This project is a rebranded and enhanced suite built upon the excellent foundation of [serverpod_swagger](https://github.com/arsheriff2k3/serverpod_swagger) by [arsheriff2k3](https://github.com/arsheriff2k3). We are grateful for their original contribution to the Serverpod ecosystem.
