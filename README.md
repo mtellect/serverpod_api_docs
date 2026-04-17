@@ -106,5 +106,9 @@ pod.webServer.addRoute(apiSpecRoute, '/apispec.json');
 - **Trailing Slash**: The package automatically handles redirects, but explicit trailing slashes in your browser (e.g., `localhost:8082/docs/`) are recommended.
 - **Port 8082**: Ensure your generated `apispec.json` has a `--base-url` that matches your active server port.
 
+## Credits
+
+This project is a rebranded and enhanced suite built upon the excellent foundation of [serverpod_swagger](https://github.com/arsheriff2k3/serverpod_swagger) by [arsheriff2k3](https://github.com/arsheriff2k3). We are grateful for their original contribution to the Serverpod ecosystem.
+
 ## License
 Apache 2.0
