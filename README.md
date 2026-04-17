@@ -4,11 +4,11 @@ A comprehensive documentation suite to automatically generate and serve **Scalar
 
 ## Features
 
+- **One-Line Integration**: Unified `ApiDocs` helper to register everything in a single call.
 - **Dual UI Support**: Choose between the modern **Scalar** API reference or the classic **Swagger UI**.
 - **Instant Load**: Uses JSON injection to eliminate extra network requests for specifications.
 - **Premium Aesthetics**: Branded with glassmorphism and dark mode support out of the box.
 - **Automated Generation**: Creates OpenAPI 3.0 specifications from your Serverpod protocol definitions.
-- **Intelligent Detection**: Automatic HTTP method detection and model parsing.
 
 ## Requirements
 
@@ -40,73 +40,71 @@ The foundation of both UIs is the `apispec.json` file. Run this command in your 
 dart run serverpod_api_docs:generate --base-url=http://localhost:8082
 ```
 
-### Common Options
-| Argument | Description | Example |
-| --- | --- | --- |
-| `--base-url` | Sets your API server URL | `--base-url=https://api.myapp.com` |
-| `--auth` | Auth type (jwt, apikey, basic) | `--auth=jwt` |
-| `--update` | Update existing spec | `--update` |
-
 ---
 
 ## Step 2: Choose Your Style
 
-You can serve your documentation using either the **Scalar** or **Swagger** interface. You can even serve both at different routes!
+Use the `ApiDocs.addRoute` helper to instantly register your documentation. You can choose your preferred UI style with a simple enum.
 
 ### Option A: Scalar UI (Modern & Sleek)
 Recommended for high-end projects. Features **glassmorphism**, a cleaner sidebar, and faster navigation.
 
 ```dart
 // bin/server.dart
-final scalarRoute = ScalarUIRoute(
-  projectRoot,
-  brandingName: 'Dey Chop', // Your Brand
-  title: 'API Reference',
-);
+import 'package:serverpod_api_docs/serverpod_api_docs.dart';
 
-// Add the route (use /** for tail match)
-pod.webServer.addRoute(scalarRoute, '/docs/**');
+ApiDocs.addRoute(
+  pod,
+  projectRoot,
+  type: ApiDocsType.scalar, // Modern look
+  brandingName: 'Dey Chop', 
+  navLinks: [
+    {'label': 'Twitter', 'url': 'https://twitter.com/wiremoney'},
+  ],
+);
 ```
 
 ### Option B: Swagger UI (Classic & Professional)
-The industry standard. Solid, familiar, and highly reliable.
+The industry standard. Solid, familiar, and now supports the same branding as Scalar.
 
 ```dart
 // bin/server.dart
-final swaggerRoute = SwaggerUIRoute(
-  projectRoot,
-  title: 'Swagger API Reference',
-);
+import 'package:serverpod_api_docs/serverpod_api_docs.dart';
 
-// Add the route (use /** for tail match)
-pod.webServer.addRoute(swaggerRoute, '/swagger/**');
+ApiDocs.addRoute(
+  pod,
+  projectRoot,
+  type: ApiDocsType.swagger, // Classic look
+  brandingName: 'API Reference',
+);
 ```
 
 ---
 
 ## Advanced Configuration
 
-### Serving the JSON Spec directly
-If you want to allow users to download the raw `apispec.json`, add the `ApiSpecRoute`:
+### Manual Route Registration
+If you need custom routing logic, you can still instantiate the routes manually:
 
 ```dart
+// For Scalar
+final scalarRoute = ScalarUIRoute(projectRoot, brandingName: 'My Brand');
+pod.webServer.addRoute(scalarRoute, '/custom_docs/**');
+
+// For Swagger
+final swaggerRoute = SwaggerUIRoute(projectRoot, title: 'My Swagger');
+pod.webServer.addRoute(swaggerRoute, '/custom_swagger/**');
+
+// Don't forget the spec route if using custom paths
 final apiSpecRoute = ApiSpecRoute(projectRoot);
 pod.webServer.addRoute(apiSpecRoute, '/apispec.json');
 ```
 
-### Automated Updates
-You can add the generator to your workflow to ensure your docs are always in sync:
-
-```bash
-# In your CI/CD or build script
-dart run serverpod_api_docs:generate --update
-```
-
 ## Troubleshooting
 
-- **Trailing Slash**: Always ensure your mount path ends with a slash (e.g., `/docs/`). The package handles redirects, but explicit paths are safer.
-- **Tail Match**: Always use `/**` in `addRoute` (e.g., `/docs/**`) so the UI can handle its internal sub-routing.
-- **Port 8082**: By default, Serverpod's web server runs on port 8082. Ensure your `--base-url` matches your active server port.
+- **Mount Path**: The `ApiDocs.addRoute` method defaults to `/docs/`. You can change this via the `mountPath` parameter.
+- **Trailing Slash**: The package automatically handles redirects, but explicit trailing slashes in your browser (e.g., `localhost:8082/docs/`) are recommended.
+- **Port 8082**: Ensure your generated `apispec.json` has a `--base-url` that matches your active server port.
 
 ## License
 Apache 2.0

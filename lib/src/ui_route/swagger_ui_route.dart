@@ -5,9 +5,8 @@ import 'swagger_assets.dart';
 
 /// A development-friendly route that serves a standard distribution Swagger UI.
 ///
-/// This route handles multiple sub-paths to provide a full-featured Swagger UI,
-/// including CSS, JS, and initialization scripts. Heavy assets are automatically
-/// redirected to a stable CDN to keep the package lightweight.
+/// This version supports custom branding and navigation links to maintain
+/// consistency with the Scalar UI.
 class SwaggerUIRoute extends Route {
   /// The root directory of the project where apispec.json is located.
   final Directory _projectRoot;
@@ -27,26 +26,41 @@ class SwaggerUIRoute extends Route {
   /// The title of the page.
   final String _title;
 
-  /// Creates a new SwaggerUIRoute instance with support for standard customization.
+  /// Branding name for the header.
+  final String _brandingName;
+
+  /// Navigation links for the header.
+  final List<Map<String, String>> _navLinks;
+
+  /// Creates a new SwaggerUIRoute instance with support for standard customization and branding.
   ///
   /// [projectRoot] is the directory where the apispec.json file is located.
   /// [mountPath] is the URL path where the Swagger UI will be served, must end with a slash.
   /// [customSpecPath] allows overriding the URL from which the Swagger UI loads the API specification.
-  /// [customIndexCss] allows providing custom branding styles.
-  /// [customInitializerJs] allows overriding the Swagger UI initialization logic.
   /// [title] sets the browser tab title.
+  /// [brandingName] sets the name displayed in the top-left of the custom header.
+  /// [navLinks] provides a list of maps (label/url) to display in the header navigation.
+  /// [customCss] allows providing additional CSS styles.
+  /// [customIndexCss] allows providing the entire index.css content (overrides branding/customCss defaults).
+  /// [customInitializerJs] allows overriding the Swagger UI initialization logic.
   SwaggerUIRoute(
     Directory projectRoot, {
     String mountPath = '/swagger/',
     String? customSpecPath,
+    String title = 'Serverpod API - Swagger UI',
+    String brandingName = 'Swagger',
+    List<Map<String, String>> navLinks = const [],
+    String customCss = '',
     String? customIndexCss,
     String? customInitializerJs,
-    String title = 'Serverpod API - Swagger UI',
   })  : assert(mountPath.endsWith('/'), 'mountPath must end with a trailing slash.'),
         _projectRoot = projectRoot,
         _mountPath = mountPath,
         _specPath = customSpecPath ?? p.join(mountPath, 'apispec.json'),
-        _indexCss = customIndexCss ?? SwaggerAssets.defaultIndexCss,
+        _brandingName = brandingName,
+        _navLinks = navLinks,
+        _indexCss = (customIndexCss ?? SwaggerAssets.defaultIndexCss)
+            .replaceAll('{{CUSTOM_CSS}}', customCss),
         _initializerJs = (customInitializerJs ?? SwaggerAssets.defaultInitializerJs)
             .replaceAll('{{SPEC_URL}}', customSpecPath ?? 'apispec.json'),
         _title = title;
@@ -114,7 +128,16 @@ class SwaggerUIRoute extends Route {
 
     // 4. Handle Main HTML Page
     if (_isMainPage(path)) {
-      final html = SwaggerAssets.indexHtmlTemplate.replaceAll('{{TITLE}}', _title);
+      // Build nav links HTML
+      final navLinksHtml = _navLinks
+          .map((link) => '<a href="${link['url']}">${link['label']}</a>')
+          .join('\n        ');
+
+      final html = SwaggerAssets.indexHtmlTemplate
+          .replaceAll('{{TITLE}}', _title)
+          .replaceAll('{{BRANDING_NAME}}', _brandingName)
+          .replaceAll('{{NAV_LINKS}}', navLinksHtml);
+
       return Response.ok(
         body: Body.fromString(html, mimeType: MimeType.html),
       );

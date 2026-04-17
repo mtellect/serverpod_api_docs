@@ -1,0 +1,83 @@
+import 'dart:io';
+import 'package:serverpod/serverpod.dart';
+import 'apispec_route.dart';
+import 'ui_route/scalar_ui_route.dart';
+import 'ui_route/swagger_ui_route.dart';
+
+/// Defines the available documentation UI styles.
+enum ApiDocsType {
+  /// The modern, sleek Scalar API reference.
+  scalar,
+
+  /// The classic, industry-standard Swagger UI.
+  swagger,
+}
+
+/// A unified helper class for registering API documentation in a Serverpod project.
+class ApiDocs {
+  /// A turn-key method to add API documentation to your Serverpod server.
+  ///
+  /// This method automatically:
+  /// 1. Registers the [ApiSpecRoute] at `/apispec.json`.
+  /// 2. Instantiates the UI route based on the [type] provided.
+  /// 3. Registers the UI route at [mountPath] with the required `/**` tail match.
+  ///
+  /// Example:
+  /// ```dart
+  /// ApiDocs.addRoute(
+  ///   pod,
+  ///   projectRoot,
+  ///   type: ApiDocsType.scalar,
+  ///   brandingName: 'Dey Chop',
+  /// );
+  /// ```
+  static void addRoute(
+    Serverpod pod,
+    Directory projectRoot, {
+    ApiDocsType type = ApiDocsType.scalar,
+    String mountPath = '/docs/',
+    String title = 'API Reference',
+    String brandingName = 'API Docs',
+    List<Map<String, String>> navLinks = const [],
+    String customCss = '',
+    Map<String, dynamic>? customConfig,
+  }) {
+    // 1. Ensure mountPath ends with a slash for consistent sub-routing
+    final normalizedMountPath =
+        mountPath.endsWith('/') ? mountPath : '$mountPath/';
+
+    // 2. Register the API Specification Route (required by both UIs)
+    final apiSpecRoute = ApiSpecRoute(projectRoot);
+    pod.webServer.addRoute(apiSpecRoute, '/apispec.json');
+
+    // 3. Register the UI Route
+    Route uiRoute;
+    if (type == ApiDocsType.scalar) {
+      uiRoute = ScalarUIRoute(
+        projectRoot,
+        mountPath: normalizedMountPath,
+        title: title,
+        brandingName: brandingName,
+        navLinks: navLinks,
+        customCss: customCss,
+        customConfig: customConfig,
+      );
+    } else {
+      uiRoute = SwaggerUIRoute(
+        projectRoot,
+        mountPath: normalizedMountPath,
+        title: title,
+        brandingName: brandingName,
+        navLinks: navLinks,
+        customCss: customCss,
+      );
+    }
+
+    // Register with the /** tail match to handle sub-resources (JS, CSS, etc.)
+    final routeMatch = normalizedMountPath.endsWith('/')
+        ? '${normalizedMountPath}**'
+        : '$normalizedMountPath/**';
+
+    pod.webServer.addRoute(uiRoute, routeMatch);
+  }
+}

@@ -13,6 +13,12 @@ class SwaggerAssets {
   </head>
 
   <body>
+    <header class="custom-header">
+      <b>{{BRANDING_NAME}}</b>
+      <nav>
+        {{NAV_LINKS}}
+      </nav>
+    </header>
     <div id="swagger-ui"></div>
     <script src="./swagger-ui-bundle.js" charset="UTF-8"> </script>
     <script src="./swagger-ui-standalone-preset.js" charset="UTF-8"> </script>
@@ -37,16 +43,53 @@ html {
 body {
   margin: 0;
   background: #fafafa;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* Custom Header Styling (Matching Scalar for consistency) */
+.custom-header {
+  height: 56px;
+  background-color: #1b1b1b;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  color: #fff;
+  font-size: 14px;
+  padding: 0 24px;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.custom-header b {
+  font-size: 18px;
+  letter-spacing: -0.02em;
+  background: linear-gradient(135deg, #fff 0%, #aaa 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.custom-header nav {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+.custom-header a {
+  text-decoration: none;
+  color: #aaa;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+.custom-header a:hover {
+  color: #fff;
 }
 
 .swagger-ui .topbar {
-  background-color: #1b1b1b;
+  display: none; /* Hide the default Swagger topbar in favor of our custom one */
 }
 
-.swagger-ui .topbar .download-url-wrapper .select-label {
-  color: #fff;
-  font-weight: bold;
-}
+{{CUSTOM_CSS}}
 ''';
 
   static const String defaultInitializerJs = '''
@@ -63,7 +106,6 @@ window.onload = function() {
       SwaggerUIBundle.plugins.DownloadUrl
     ],
     layout: "StandaloneLayout",
-    // Enable all OAuth-related functionality
     oauth2RedirectUrl: window.location.origin + window.location.pathname + 'oauth2-redirect.html',
     persistAuthorization: true,
     displayOperationId: false,
