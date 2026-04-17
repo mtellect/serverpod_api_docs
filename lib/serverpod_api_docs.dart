@@ -7,4 +7,5 @@ export 'src/ui_route/swagger_ui_route.dart';
 export 'src/ui_route/scalar_ui_route.dart';
 export 'src/ui_route/api_docs_ui_route.dart';
 export 'src/ui_route/apispec_route.dart';
+export 'src/ui_route/api_proxy_route.dart';
 export 'src/api_docs_helper.dart'; // Unified helper class and enum

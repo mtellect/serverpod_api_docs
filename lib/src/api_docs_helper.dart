@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:serverpod/serverpod.dart';
 import 'ui_route/apispec_route.dart';
 import 'ui_route/api_docs_ui_route.dart';
+import 'ui_route/api_proxy_route.dart';
 
 /// Defines the available documentation UI styles.
 enum ApiDocsType {
@@ -76,8 +77,13 @@ class ApiDocs {
 
     // Register with the /** tail match to handle sub-resources (JS, CSS, etc.)
     final routeMatch =
-        normalizedMountPath.endsWith('/') ? '${normalizedMountPath}**' : '$normalizedMountPath/**';
+        normalizedMountPath.endsWith('/') ? '$normalizedMountPath**' : '$normalizedMountPath/**';
 
     pod.webServer.addRoute(uiRoute, routeMatch);
+
+    // 4. Register the API Proxy Route on the Web Server (shared port or 8082)
+    // This allows the documentation to call endpoints using REST-like paths /endpoint/method
+    final apiProxyRoute = ApiProxyRoute();
+    pod.webServer.addRoute(apiProxyRoute, '/**');
   }
 }
