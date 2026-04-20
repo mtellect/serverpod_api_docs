@@ -106,6 +106,26 @@ Future<void> main(List<String> args) async {
       customHttpMethods: customHttpMethods,
       updateMode: updateMode);
 
+  // --- Step 2.5: SORT PATHS BY OPERATION ID ---
+  print('🗂️  Sorting paths by operationId...');
+  final pathsToSort = modifiedApiJson['paths'] as Map<String, dynamic>;
+  final sortedPathsList = pathsToSort.entries.toList()
+    ..sort((a, b) {
+      String getFirstOperationId(dynamic pathItem) {
+        if (pathItem is! Map<String, dynamic> || pathItem.isEmpty) return '';
+        final firstOp = pathItem.values.first;
+        if (firstOp is Map) {
+          return firstOp['operationId'] as String? ?? '';
+        }
+        return '';
+      }
+
+      final opIdA = getFirstOperationId(a.value);
+      final opIdB = getFirstOperationId(b.value);
+      return opIdA.toLowerCase().compareTo(opIdB.toLowerCase());
+    });
+  modifiedApiJson['paths'] = Map<String, dynamic>.fromEntries(sortedPathsList);
+
   // --- Step 3: WRITE THE FINAL RESULT ---
   final prettyJson = JsonEncoder.withIndent('  ').convert(modifiedApiJson);
   outputFile.writeAsStringSync(prettyJson);
